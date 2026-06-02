@@ -183,3 +183,71 @@ if node_failed (
 □ 空白环境执行：Node.js 失败后 skill 仍然安装成功
 □ ZIP vs 本地源文件大小完全一致
 ```
+
+---
+
+### 坑 5：中文 bat 的 UTF-8 输出 + 状态标签全中文化（2026-06-02）
+
+**背景**：用户要求安装器全部显示中文，不要再混杂英文状态标签。同时 ZIP 内需要附带中文说明文件。
+
+**实施内容**：
+
+| 原来 | 改为 |
+|------|------|
+| `[OK]` / `[WARN]` / `[SKIP]` / `[ERROR]` / `[RETRY]` / `[INFO]` | `[完成]` / `[警告]` / `[跳过]` / `[错误]` / `[重试]` / `[提示]` |
+| `Installation Summary` | `安装总结` |
+| `How to Use Each Skill` | `Skill 使用方法` |
+| `Say: "open browser..."` | `说："打开浏览器搜索 xxx"` |
+| 所有步骤描述、错误提示、使用指南 | 全部中文化 |
+
+**关键注意事项**：
+
+1. **`chcp 65001` 后输出是 UTF-8**：bat 脚本开头有 `chcp 65001 >nul 2>&1`，所以 Python 子进程读取输出时必须用 `decode('utf-8')`，不能用 GBK。
+
+2. **中文括号不需要转义**：中文全角括号 `（）` 不会触发 cmd 的块解析，建议在中文 echo 中优先使用全角括号，避免 `^` 转义。
+
+3. **状态栏用全角符号**：`（1=已装 0=未装）` 比 `(1=ok, 0=missing)` 更自然，也不需要转义。
+
+4. **Skill 使用指南也要中文化**：每个 skill 的描述和触发词示例都要翻译，让纯中文用户看得懂。
+
+5. **附带 `README_CN.md`**：每个 ZIP 内都要包含一份中文使用说明，内容包括安装步骤、三档对比、常见问题、文件结构。
+
+**打包时额外包含的文件**：
+
+```python
+# README_CN.md 随 bat 一起打入 ZIP
+zf.writestr('install-offline.bat', bat_raw)
+zf.write(CONFIG, 'settings.template.json')
+zf.write(README_CN, 'README_CN.md')  # ← 新增
+```
+
+**验证要点**：
+
+```
+□ bat 内容包含中文状态标签: [完成] [警告] [跳过] [重试] [提示]
+□ bat 内容包含: 安装总结, Skill 使用方法
+□ bat 内容包含: 所有 7 步描述为中文
+□ 执行输出用 UTF-8 解码后: 安装总结 + Skill 使用方法 均显示正常
+□ ZIP 内包含 README_CN.md
+□ 三个档位全部通过执行测试
+```
+
+---
+
+### 打包完整自检清单（汇总）
+
+```
+□ ZIP testzip 无损坏
+□ ZIP 内 .bat 文件 CRLF > 300, LF-only = 0
+□ bat: call npm, call code, call winget, call powershell
+□ bat: ^( 转义括号
+□ bat: [完成]/[警告]/[跳过]/[重试]/[提示] 中文标签
+□ bat: 安装总结 + Skill 使用方法
+□ bat: [0/6]~[6/6] 全部 7 步
+□ bat: set OK_NODE=0, OK_VSCODE=0, OK_CLAUDE=0
+□ ZIP 内包含 README_CN.md + settings.template.json
+□ 真实执行：7 步全通 + 中文总结/指南正常
+□ 空白环境：Node.js 失败后 skill 仍安装
+□ ZIP vs 本地源文件大小一致
+□ 三个档位全部通过测试
+```
