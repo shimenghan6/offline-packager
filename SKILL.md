@@ -29,14 +29,27 @@ description: |
 'github-publisher' → 'github-publisher'
 ```
 
+## 打包前置：更新本地 Skill（铁律）
+
+**打包前必须先把最新源文件同步到本地 skill 目录。** 确保 ZIP 内打包的是最新版本。
+
+```
+1. 检查 ~/.claude/skills/<name>/ 是否存在
+2. 如果存在 → 从源路径复制最新文件覆盖
+   - 微信类 skill: 从 ~/.claude/wechat-bridge.mjs, watchdog.py 等复制
+   - 其他 skill: 从 ~/github-repos/<name>/ 或 ~/.claude/skills/<name>/ 复制最新
+3. 对比 hash，确认 skill 目录 == 源文件
+4. 不同则更新后重新打包
+```
+
 ## 打包源路径
 
-| 类型 | 本地路径 |
-|------|------|
-| 安装器 | `~/github-repos/claude-code-starter/offline/install-offline.bat` |
-| 配置 | `~/github-repos/claude-code-starter/settings.template.json` |
-| Skill | `~/.claude/skills/<name>/SKILL.md` |
-| 微信 | `~/.claude/wechat-bridge.mjs` `media-processor.py` `cloud_vision.py` |
+| 类型 | 本地路径 | 同步目标 |
+|------|------|------|
+| 安装器 | `~/github-repos/claude-code-starter/offline/install-offline.bat` | — |
+| 配置 | `~/github-repos/claude-code-starter/settings.template.json` | — |
+| Skill | `~/.claude/skills/<name>/SKILL.md` | `~/.claude/skills/<name>/` ← 从源同步 |
+| 微信 | `~/.claude/wechat-bridge.mjs` `media-processor.py` `cloud_vision.py` `watchdog.py` `start-wechat-channel.bat` | `~/.claude/skills/claude-code-wechat/` ← 强制同步 |
 
 ## 输出
 
